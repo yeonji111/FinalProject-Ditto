@@ -1,0 +1,70 @@
+도서 목록 페이지 조회 데이터 흐름도
+파일 경로 : src/pages/book/list.js
+요청 URL : http://localhost:3000/book/list
+특이사항 : 페이지 이동 시 요청 URL 이 "http://localhost:3000/book/list?currentPageNo=7" 같은 형식으로 변형됨
+
+1. 페이지 진입
+2. axios get 방식으로 DB에 요청 || firstRecordIndex(첫번째 인덱스), searchWord(검색어), searchType(검색 타입)
+	(=> searchType == "", searchWord == "" 인 경우 조건문을 타지 않음)
+3. DB 요청으로 받은 list를 화면으로 출력 || setBookList(전체 도서 목록)
+4. 페이지 번호를 눌렀을때 의 값이 바뀌며 1-3번 반복 || firstRecordIndex(첫번째 인덱스), currentPage(현재 페이지 번호)
+5. searchWord와 searchType 를 추가하고 검색버튼을 클릭 했을때 2-4번 반복
+6. DB 요청으로 받은 결과값을 화면에 출력 || setBookList(전체 도서 목록)
+
+
+
+
+
+
+
+
+도서 상세보기 (http://localhost:3000/book/view?bookNo=1) 데이터 흐름도 
+파일 경로 : src/pages/book/view.js
+요청 URL : http://localhost:3000/book/view
+특이사항 : 도서 번호 교체 마다 요청 URL이 "http://localhost:3000/book/view?bookNo=62"이 같은 형식으로 변형됨
+
+[ 도서 정보 조회 ]
+1. 페이지 진입
+2. url에 있는 bookNo의 값을 useSearchParams훅을 사용해 파라미터로 받음  || bookNo(도서번호)
+3. axios get 방식으로 DB에 요청 || bookNo(도서번호)
+4. DB의 요청받은 book을 화면에 출력 || book (표지, 번호, 제목, 저자, 출판사, 도서설명, 해당년월, 대출가능여부를 담고 있는 객체)
+5. book의 대출 가능여부를 bookRent에 담음 || bookRent(도서 대여 여부)
+6. 삼항연산자를 사용하여 bookRent가 true인 경우 대출가능여부에 초록색 아이콘 출력, 
+							false인 경우 대출불가 아이콘 출력 
+
+
+
+[ 도서 대여 ]
+
+-- 대여가 불가능한 도서인 경우 (타인이 대여중)
+
+=============== 로그인 상태 여부 확인 ======================
+1. session에 member가 저장되어있는지 (로그인되어있는지) 확인 후 도서 대여 버튼 노출
+
+2-1. 1이 저장되어있으면 도서 대여 버튼 노출 O
+
+2-2. 저장되어있는 member가 없다면 도서 대여 버튼 노출 X
+
+=============== 다른 사람이 이미 도서 대여한 경우 ======================
+1. 도서 대여 버튼을 클릭한 경우 bookRent를 기준으로 alert로 경고창을 띄운 후 도서 대여 절차 진행 X || bookRent(도서 대여 여부, false)
+
+
+
+
+
+
+-- 대여가 가능한 도서인 경우 
+
+=============== 연체일수 확인 =======================
+1. axios post 방식으로 요청 || memberNo (회원번호)
+2. 1의 결과 연체일수가 0 이상인 경우 alert로 대여 불가 메세지 출력 후 리턴 
+
+============= 사용자의 현재 대출중인 도서 갯수 확인 ==================
+1. DB 조회 결과 연체일수가 없는 경우 최대 도서 대여 기준을 초과했는지 axios post방식으로 memberNo를 파라미터로 넘겨서 DB 조회 || res.data(대출중인 도서의 갯수)
+2. DB 조회 결과값을 기준으로 3권이 넘는 경우 alert로 도서 대여 최대 권수가 초과했음을 알림
+
+========== 모든 조건을 통과하고 도서 대여 진행 =================
+1. axios post 방식으로 rent테이블에 해당 정보들 insert진행 ||  bookNo(도서번호), bookName(도서명), memberNo(회원번호), memberId(회원아이디)
+2. 1번에서 진행한 요청이 무사히 처리된 경우 status가 200이므로 axios post 방식으로 해당 도서의 도서 대여 여부를 N -> Y로 변경 || bookNo(도서번호)
+3. 모든 도서 대여 절차 진행 후 마이페이지로 이동
+
